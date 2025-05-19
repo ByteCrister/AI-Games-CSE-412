@@ -21,7 +21,7 @@ const INITIAL_STATE: GameState = {
   validMoves: []
 };
 
-export const useReversiGame = (difficulty: Difficulty = 'medium') => {
+export const useReversiGame = (difficulty: Difficulty = 'hard') => {
   const [gameState, setGameState] = useState<GameState>(() => {
     const initialBoard = createInitialBoard();
     return {
@@ -86,7 +86,7 @@ export const useReversiGame = (difficulty: Difficulty = 'medium') => {
 
     // If next player has no valid moves, switch back to current player
     const finalPlayer = nextValidMoves.length === 0 ? currentPlayer : nextPlayer;
-    const finalValidMoves = nextValidMoves.length === 0 ? 
+    const finalValidMoves = nextValidMoves.length === 0 ?
       getValidMoves(newBoard, currentPlayer) : nextValidMoves;
 
     updateGameState({
@@ -123,7 +123,7 @@ export const useReversiGame = (difficulty: Difficulty = 'medium') => {
 
         // If next player has no valid moves, switch back to AI
         const finalPlayer = nextValidMoves.length === 0 ? currentPlayer : nextPlayer;
-        const finalValidMoves = nextValidMoves.length === 0 ? 
+        const finalValidMoves = nextValidMoves.length === 0 ?
           getValidMoves(newBoard, currentPlayer) : nextValidMoves;
 
         const scores = calculateScores(newBoard);
@@ -168,7 +168,7 @@ export const useReversiGame = (difficulty: Difficulty = 'medium') => {
   const restart = useCallback(() => {
     const initialBoard = createInitialBoard();
     const initialValidMoves = getValidMoves(initialBoard, 'black');
-    
+
     setGameState({
       ...INITIAL_STATE,
       board: initialBoard,
@@ -181,10 +181,10 @@ export const useReversiGame = (difficulty: Difficulty = 'medium') => {
   // Handle AI moves
   useEffect(() => {
     const currentState = gameStateRef.current;
-    if (!currentState.gameOver && 
-        currentState.currentPlayer === 'white' && 
-        !isProcessingMove && 
-        currentState.validMoves.length > 0) {
+    if (!currentState.gameOver &&
+      currentState.currentPlayer === 'white' &&
+      !isProcessingMove &&
+      currentState.validMoves.length > 0) {
       handleAIMove();
     }
   }, [gameState.currentPlayer, gameState.gameOver, handleAIMove, isProcessingMove]);

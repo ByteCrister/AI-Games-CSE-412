@@ -28,7 +28,7 @@ const evaluateBoard = (board: Board): number => {
 };
 
 // Minimax algorithm with alpha-beta pruning
-const minimax = (
+const alphabeta = (
   board: Board,
   depth: number,
   alpha: number,
@@ -40,7 +40,7 @@ const minimax = (
   }
 
   const validMoves = getValidMoves(board, isMaximizing ? 'white' : 'black');
-  
+
   if (validMoves.length === 0) {
     return evaluateBoard(board);
   }
@@ -50,10 +50,13 @@ const minimax = (
     for (const move of validMoves) {
       const newBoard = board.map(row => [...row]);
       newBoard[move.row][move.col] = 'white';
-      const evaluation = minimax(newBoard, depth - 1, alpha, beta, false);
+      const evaluation = alphabeta(newBoard, depth - 1, alpha, beta, false);
       maxEval = Math.max(maxEval, evaluation);
       alpha = Math.max(alpha, evaluation);
-      if (beta <= alpha) break;
+      if (beta <= alpha) {
+        // console.log('Pruning at depth:', depth, 'for move:', move);
+        break;
+      };
     }
     return maxEval;
   } else {
@@ -61,10 +64,13 @@ const minimax = (
     for (const move of validMoves) {
       const newBoard = board.map(row => [...row]);
       newBoard[move.row][move.col] = 'black';
-      const evaluation = minimax(newBoard, depth - 1, alpha, beta, true);
+      const evaluation = alphabeta(newBoard, depth - 1, alpha, beta, true);
       minEval = Math.min(minEval, evaluation);
       beta = Math.min(beta, evaluation);
-      if (beta <= alpha) break;
+      if (beta <= alpha) {
+        // console.log('Pruning at depth:', depth, 'for move:', move);
+        break;
+      };
     }
     return minEval;
   }
@@ -88,17 +94,17 @@ export const getAIMove = (
       return validMoves.reduce((best, current) => {
         let currentFlips = 0;
         let bestFlips = 0;
-        
+
         // Count flips in all directions for both moves
         for (let dx = -1; dx <= 1; dx++) {
           for (let dy = -1; dy <= 1; dy++) {
             if (dx === 0 && dy === 0) continue;
-            
+
             currentFlips += wouldFlip(board, current, 'white', dx, dy).length;
             bestFlips += wouldFlip(board, best, 'white', dx, dy).length;
           }
         }
-        
+
         return currentFlips > bestFlips ? current : best;
       });
 
@@ -110,8 +116,8 @@ export const getAIMove = (
       for (const move of validMoves) {
         const newBoard = board.map(row => [...row]);
         newBoard[move.row][move.col] = 'white';
-        const score = minimax(newBoard, 3, -Infinity, Infinity, false);
-        
+        const score = alphabeta(newBoard, 3, -Infinity, Infinity, false);
+
         if (score > bestScore) {
           bestScore = score;
           bestMove = move;

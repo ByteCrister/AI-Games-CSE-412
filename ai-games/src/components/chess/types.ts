@@ -12,10 +12,11 @@ export interface GameState {
   board: Record<Square, Piece | null>;
   currentTurn: PieceColor;
   selectedSquare: Square | null;
-  validMoves: Square[];
+  validMoves: Move[];
   moveHistory: Move[];
   isCheck: boolean;
   isCheckmate: boolean;
+  isResigned: boolean;
 }
 
 export interface Move {
@@ -29,4 +30,5 @@ export interface Move {
 }
 
 export type GameMode = 'pvp' | 'ai';
-export type AIDifficulty = 'easy' | 'medium' | 'hard'; 
+export type AIDifficulty = 'easy' | 'medium' | 'hard';
+export type TurnOrder = 'player' | 'ai'; 

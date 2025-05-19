@@ -1,23 +1,147 @@
 "use client";
 
-import { useState, useCallback } from 'react';
-import { GameState, Square, GameMode, AIDifficulty } from './types';
-import { initializeBoard, getValidMoves, makeMove } from './GameLogic';
+import { useState, useCallback, useEffect } from 'react';
+import { GameState, Square, AIDifficulty, TurnOrder, PieceColor, Move, Piece } from './types';
+import { initializeBoard, getValidMoves } from './GameLogic';
 import { getAIMove } from './AI';
 
-export function useChessGame(mode: GameMode, aiDifficulty: AIDifficulty = 'medium') {
+// Helper functions
+function findKingPosition(board: Record<Square, Piece | null>, color: PieceColor): Square | null {
+  for (const [square, piece] of Object.entries(board)) {
+    if (piece?.type === 'king' && piece.color === color) {
+      return square as Square;
+    }
+  }
+  return null;
+}
+
+function isSquareUnderAttack(
+  board: Record<Square, Piece | null>,
+  square: Square,
+  attackingColor: PieceColor
+): boolean {
+  for (const [fromSquare, piece] of Object.entries(board)) {
+    if (piece && piece.color === attackingColor) {
+      const validMoves = getValidMoves(fromSquare as Square, { board, currentTurn: attackingColor } as GameState);
+      if (validMoves.includes(square)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function isInCheck(gameState: GameState, color: PieceColor): boolean {
+  const kingSquare = findKingPosition(gameState.board, color);
+  if (!kingSquare) return false;
+
+  const opponentColor = color === 'white' ? 'black' : 'white';
+  return isSquareUnderAttack(gameState.board, kingSquare, opponentColor);
+}
+
+function canMoveOutOfCheck(gameState: GameState, color: PieceColor): boolean {
+  // Try all possible moves for all pieces of the given color
+  for (const [fromSquare, piece] of Object.entries(gameState.board)) {
+    if (piece && piece.color === color) {
+      const validMoves = getValidMoves(fromSquare as Square, gameState);
+      
+      // Try each valid move
+      for (const toSquare of validMoves) {
+        // Create a copy of the board for testing the move
+        const testBoard = { ...gameState.board } as Record<Square, Piece | null>;
+        const fromPiece = testBoard[fromSquare as Square];
+        
+        // Make the move on the test board
+        testBoard[toSquare] = fromPiece;
+        delete testBoard[fromSquare as Square];
+        
+        // Check if the king is still in check after this move
+        const kingSquare = findKingPosition(testBoard, color);
+        if (kingSquare) {
+          const opponentColor = color === 'white' ? 'black' : 'white';
+          if (!isSquareUnderAttack(testBoard, kingSquare, opponentColor)) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function isCheckmate(gameState: GameState, color: PieceColor): boolean {
+  // First check if the king is in check
+  if (!isInCheck(gameState, color)) {
+    return false;
+  }
+
+  // If the king is in check, check if any move can get out of check
+  return !canMoveOutOfCheck(gameState, color);
+}
+
+function makeMoveOnBoard(
+  board: Record<Square, Piece | null>,
+  from: Square,
+  to: Square
+): Record<Square, Piece | null> {
+  const newBoard = { ...board } as Record<Square, Piece | null>;
+  newBoard[to] = newBoard[from];
+  delete newBoard[from];
+  return newBoard;
+}
+
+export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: TurnOrder = 'player') {
   const [gameState, setGameState] = useState<GameState>(() => ({
     board: initializeBoard(),
-    currentTurn: 'white',
+    currentTurn: 'white' as PieceColor,
     selectedSquare: null,
-    validMoves: [],
-    moveHistory: [],
+    validMoves: [] as Move[],
+    moveHistory: [] as Move[],
     isCheck: false,
     isCheckmate: false,
+    isResigned: false,
   }));
+
+  // Effect to handle AI's first move
+  useEffect(() => {
+    if (turnOrder === 'ai' && gameState.currentTurn === 'white' && gameState.moveHistory.length === 0) {
+      setTimeout(() => {
+        setGameState(prev => {
+          const aiMove = getAIMove(prev, difficulty);
+          if (aiMove) {
+            const newBoard = makeMoveOnBoard(prev.board, aiMove.from, aiMove.to);
+            const newState: GameState = {
+              ...prev,
+              board: newBoard,
+              currentTurn: 'black',
+              moveHistory: [...prev.moveHistory, aiMove],
+            };
+
+            const isInCheckState = isInCheck(newState, newState.currentTurn);
+            const isCheckmateState = isInCheckState && isCheckmate(newState, newState.currentTurn);
+
+            return {
+              ...newState,
+              isCheck: isInCheckState,
+              isCheckmate: isCheckmateState,
+            };
+          }
+          return prev;
+        });
+      }, 500);
+    }
+  }, [turnOrder, difficulty, gameState.currentTurn, gameState.moveHistory.length]);
 
   const handleSquareClick = useCallback((square: Square) => {
     setGameState(prevState => {
+      // If it's AI's turn, ignore player clicks
+      const isPlayerTurn = (turnOrder === 'player' && prevState.currentTurn === 'white') ||
+                          (turnOrder === 'ai' && prevState.currentTurn === 'black');
+      
+      if (!isPlayerTurn) {
+        return prevState;
+      }
+
       // If a square is already selected
       if (prevState.selectedSquare) {
         // If clicking the same square, deselect it
@@ -25,32 +149,80 @@ export function useChessGame(mode: GameMode, aiDifficulty: AIDifficulty = 'mediu
           return {
             ...prevState,
             selectedSquare: null,
-            validMoves: [],
+            validMoves: [] as Move[],
           };
         }
 
         // If clicking a valid move square
-        if (prevState.validMoves.includes(square)) {
-          const newState = makeMove(prevState.selectedSquare, square, prevState);
-          
-          // If it's AI's turn and we're in AI mode, make AI move
-          if (mode === 'ai' && newState.currentTurn === 'black') {
+        const validMove = prevState.validMoves.find(move => move.to === square);
+        if (validMove) {
+          const newBoard = makeMoveOnBoard(prevState.board, prevState.selectedSquare, square);
+          const newState: GameState = {
+            ...prevState,
+            board: newBoard,
+            currentTurn: prevState.currentTurn === 'white' ? 'black' : 'white',
+            selectedSquare: null,
+            validMoves: [] as Move[],
+            moveHistory: [...prevState.moveHistory, validMove],
+          };
+
+          const isInCheckState = isInCheck(newState, newState.currentTurn);
+          const isCheckmateState = isInCheckState && isCheckmate(newState, newState.currentTurn);
+
+          const updatedState = {
+            ...newState,
+            isCheck: isInCheckState,
+            isCheckmate: isCheckmateState,
+          };
+
+          // If it's AI's turn after player's move, make AI move
+          const isAITurn = (turnOrder === 'player' && updatedState.currentTurn === 'black') ||
+                          (turnOrder === 'ai' && updatedState.currentTurn === 'white');
+
+          if (isAITurn) {
             setTimeout(() => {
-              const aiMove = getAIMove(newState, aiDifficulty);
-              setGameState(prev => makeMove(aiMove.from, aiMove.to, prev));
+              setGameState(prev => {
+                const aiMove = getAIMove(prev, difficulty);
+                if (aiMove) {
+                  const aiBoard = makeMoveOnBoard(prev.board, aiMove.from, aiMove.to);
+                  const aiState: GameState = {
+                    ...prev,
+                    board: aiBoard,
+                    currentTurn: prev.currentTurn === 'white' ? 'black' : 'white',
+                    moveHistory: [...prev.moveHistory, aiMove],
+                  };
+
+                  const aiInCheck = isInCheck(aiState, aiState.currentTurn);
+                  const aiCheckmate = aiInCheck && isCheckmate(aiState, aiState.currentTurn);
+
+                  return {
+                    ...aiState,
+                    isCheck: aiInCheck,
+                    isCheckmate: aiCheckmate,
+                  };
+                }
+                return prev;
+              });
             }, 500);
           }
 
-          return newState;
+          return updatedState;
         }
 
         // If clicking a different piece of the same color, select that piece
         const piece = prevState.board[square];
         if (piece && piece.color === prevState.currentTurn) {
+          const validSquares = getValidMoves(square, prevState);
+          const validMoves: Move[] = validSquares.map(to => ({
+            from: square,
+            to,
+            piece,
+            capturedPiece: prevState.board[to] || undefined,
+          }));
           return {
             ...prevState,
             selectedSquare: square,
-            validMoves: getValidMoves(square, prevState),
+            validMoves,
           };
         }
 
@@ -58,85 +230,84 @@ export function useChessGame(mode: GameMode, aiDifficulty: AIDifficulty = 'mediu
         return {
           ...prevState,
           selectedSquare: null,
-          validMoves: [],
+          validMoves: [] as Move[],
         };
       }
 
       // If no square is selected, select the clicked square if it has a piece
       const piece = prevState.board[square];
       if (piece && piece.color === prevState.currentTurn) {
+        const validSquares = getValidMoves(square, prevState);
+        const validMoves: Move[] = validSquares.map(to => ({
+          from: square,
+          to,
+          piece,
+          capturedPiece: prevState.board[to] || undefined,
+        }));
         return {
           ...prevState,
           selectedSquare: square,
-          validMoves: getValidMoves(square, prevState),
+          validMoves,
         };
       }
 
       return prevState;
     });
-  }, [mode, aiDifficulty]);
+  }, [difficulty, turnOrder]);
 
   const handleRestart = useCallback(() => {
     setGameState({
       board: initializeBoard(),
-      currentTurn: 'white',
+      currentTurn: 'white' as PieceColor,
       selectedSquare: null,
-      validMoves: [],
-      moveHistory: [],
+      validMoves: [] as Move[],
+      moveHistory: [] as Move[],
       isCheck: false,
       isCheckmate: false,
+      isResigned: false,
     });
   }, []);
 
   const handleUndo = useCallback(() => {
     setGameState(prevState => {
-      if (prevState.moveHistory.length === 0) return prevState;
-
-      const lastMove = prevState.moveHistory[prevState.moveHistory.length - 1];
-      const newBoard = { ...prevState.board };
+      if (prevState.moveHistory.length < 2) return prevState;
       
-      // Restore the moved piece to its original position
-      newBoard[lastMove.from] = { ...lastMove.piece, hasMoved: lastMove.piece.hasMoved };
+      // Remove last two moves (player's and AI's)
+      const newMoveHistory = prevState.moveHistory.slice(0, -2);
       
-      // Restore the captured piece if any
-      if (lastMove.capturedPiece) {
-        newBoard[lastMove.to] = { ...lastMove.capturedPiece };
-      } else {
-        newBoard[lastMove.to] = null;
-      }
-
-      // Handle castling undo
-      if (lastMove.isCastling) {
-        const fromRank = lastMove.from[1];
-        if (lastMove.to[0] === 'g') {
-          // Kingside castling undo
-          newBoard[`h${fromRank}` as Square] = { type: 'rook', color: lastMove.piece.color, hasMoved: false };
-          newBoard[`f${fromRank}` as Square] = null;
-        } else if (lastMove.to[0] === 'c') {
-          // Queenside castling undo
-          newBoard[`a${fromRank}` as Square] = { type: 'rook', color: lastMove.piece.color, hasMoved: false };
-          newBoard[`d${fromRank}` as Square] = null;
-        }
-      }
-
-      return {
+      // Reset the board and replay all moves except the last two
+      let newState: GameState = {
         ...prevState,
-        board: newBoard,
-        currentTurn: prevState.currentTurn === 'white' ? 'black' : 'white',
+        board: initializeBoard(),
+        moveHistory: newMoveHistory,
+        currentTurn: 'white' as PieceColor,
         selectedSquare: null,
-        validMoves: [],
-        moveHistory: prevState.moveHistory.slice(0, -1),
+        validMoves: [] as Move[],
         isCheck: false,
         isCheckmate: false,
       };
+
+      // Replay all moves
+      newMoveHistory.forEach(move => {
+        newState = {
+          ...newState,
+          board: makeMoveOnBoard(newState.board, move.from, move.to),
+          currentTurn: newState.currentTurn === 'white' ? 'black' : 'white',
+        };
+      });
+
+      // Update check and checkmate status
+      newState.isCheck = isInCheck(newState, newState.currentTurn);
+      newState.isCheckmate = newState.isCheck && isCheckmate(newState, newState.currentTurn);
+
+      return newState;
     });
   }, []);
 
   const handleResign = useCallback(() => {
     setGameState(prevState => ({
       ...prevState,
-      isCheckmate: true,
-      currentTurn: prevState.currentTurn === 'white' ? 'black' : 'white',
+      isResigned: true,
     }));
   }, []);
 

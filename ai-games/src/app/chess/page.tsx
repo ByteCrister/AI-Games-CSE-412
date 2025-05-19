@@ -1,9 +1,9 @@
-import ChessModeSelector from '@/components/chess/ChessModeSelector'
+import ChessDifficulty from '@/components/chess/ChessDifficulty'
 import React from 'react'
 
 const Page = () => {
   return (
-    <ChessModeSelector />
+    <ChessDifficulty />
   )
 }
 

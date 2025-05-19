@@ -1,40 +1,32 @@
-import { Square, Piece, GameState, Move } from './types';
+import { Square, Piece, GameState, PieceType, PieceColor } from './types';
 
 export function initializeBoard(): Record<Square, Piece | null> {
-  // Initialize with all squares set to null
-  const board = {} as Record<Square, Piece | null>;
-  const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  const board: Record<Square, Piece | null> = {} as Record<Square, Piece | null>;
   
   // Initialize empty board
-  for (let rank = 1; rank <= 8; rank++) {
-    for (const file of files) {
-      board[`${file}${rank}` as Square] = null;
+  for (let file = 0; file < 8; file++) {
+    for (let rank = 0; rank < 8; rank++) {
+      const square = `${String.fromCharCode(97 + file)}${rank + 1}` as Square;
+      board[square] = null;
     }
   }
 
   // Set up pawns
-  for (const file of files) {
-    board[`${file}2` as Square] = { type: 'pawn', color: 'white', hasMoved: false };
-    board[`${file}7` as Square] = { type: 'pawn', color: 'black', hasMoved: false };
+  for (let file = 0; file < 8; file++) {
+    const whitePawnSquare = `${String.fromCharCode(97 + file)}2` as Square;
+    const blackPawnSquare = `${String.fromCharCode(97 + file)}7` as Square;
+    board[whitePawnSquare] = { type: 'pawn', color: 'white', hasMoved: false };
+    board[blackPawnSquare] = { type: 'pawn', color: 'black', hasMoved: false };
   }
 
   // Set up other pieces
-  const pieces: Piece[] = [
-    { type: 'rook', color: 'white', hasMoved: false },
-    { type: 'knight', color: 'white', hasMoved: false },
-    { type: 'bishop', color: 'white', hasMoved: false },
-    { type: 'queen', color: 'white', hasMoved: false },
-    { type: 'king', color: 'white', hasMoved: false },
-    { type: 'bishop', color: 'white', hasMoved: false },
-    { type: 'knight', color: 'white', hasMoved: false },
-    { type: 'rook', color: 'white', hasMoved: false },
-  ];
-
-  pieces.forEach((piece, index) => {
-    const file = files[index];
-    board[`${file}1` as Square] = piece;
-    board[`${file}8` as Square] = { ...piece, color: 'black' };
-  });
+  const pieceOrder: PieceType[] = ['rook', 'knight', 'bishop', 'queen', 'king', 'bishop', 'knight', 'rook'];
+  for (let file = 0; file < 8; file++) {
+    const whitePieceSquare = `${String.fromCharCode(97 + file)}1` as Square;
+    const blackPieceSquare = `${String.fromCharCode(97 + file)}8` as Square;
+    board[whitePieceSquare] = { type: pieceOrder[file], color: 'white', hasMoved: false };
+    board[blackPieceSquare] = { type: pieceOrder[file], color: 'black', hasMoved: false };
+  }
 
   return board;
 }
@@ -268,132 +260,104 @@ function addKingMoves(moves: Square[], square: Square, piece: Piece, gameState: 
   }
 }
 
+// Helper function to find king position
+function findKingPosition(board: Record<Square, Piece | null>, color: PieceColor): Square | null {
+  for (const [square, piece] of Object.entries(board)) {
+    if (piece?.type === 'king' && piece.color === color) {
+      return square as Square;
+    }
+  }
+  return null;
+}
+
+// Helper function to check if a square is under attack
+function isSquareUnderAttack(
+  board: Record<Square, Piece | null>,
+  square: Square,
+  attackingColor: PieceColor
+): boolean {
+  for (const [fromSquare, piece] of Object.entries(board)) {
+    if (piece && piece.color === attackingColor) {
+      const validMoves = getValidMoves(fromSquare as Square, { board, currentTurn: attackingColor } as GameState);
+      if (validMoves.includes(square)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// Helper function to check if a king is in check
+function isInCheck(board: Record<Square, Piece | null>, color: PieceColor): boolean {
+  const kingSquare = findKingPosition(board, color);
+  if (!kingSquare) return false;
+
+  const opponentColor = color === 'white' ? 'black' : 'white';
+  return isSquareUnderAttack(board, kingSquare, opponentColor);
+}
+
+// Helper function to check if a move would put or leave the king in check
+function wouldBeInCheck(
+  board: Record<Square, Piece | null>,
+  from: Square,
+  to: Square,
+  color: PieceColor
+): boolean {
+  const newBoard = { ...board };
+  newBoard[to] = newBoard[from];
+  delete newBoard[from];
+  return isInCheck(newBoard, color);
+}
+
+// Helper function to check if a player can move out of check
+function canMoveOutOfCheck(board: Record<Square, Piece | null>, color: PieceColor): boolean {
+  for (const [fromSquare, piece] of Object.entries(board)) {
+    if (piece && piece.color === color) {
+      const validMoves = getValidMoves(fromSquare as Square, { board, currentTurn: color } as GameState);
+      for (const toSquare of validMoves) {
+        if (!wouldBeInCheck(board, fromSquare as Square, toSquare, color)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
 export function makeMove(
   from: Square,
   to: Square,
   gameState: GameState
 ): GameState {
-  const newState = { ...gameState };
   const piece = gameState.board[from];
-  
   if (!piece) return gameState;
 
-  // Create move record
-  const move: Move = {
-    from,
-    to,
-    piece,
-    capturedPiece: gameState.board[to] || undefined,
+  // Create new board state
+  const newBoard = { ...gameState.board };
+  newBoard[to] = { ...piece, hasMoved: true };
+  delete newBoard[from];
+
+  // Create new game state
+  const newState: GameState = {
+    ...gameState,
+    board: newBoard,
+    currentTurn: gameState.currentTurn === 'white' ? 'black' : 'white',
+    selectedSquare: null,
+    validMoves: [],
   };
 
-  // Update board - create a new board object to ensure immutability
-  const newBoard = { ...gameState.board };
-  
-  // Remove the piece from its original position
-  newBoard[from] = null;
-  
-  // Place the piece in its new position
-  newBoard[to] = { ...piece, hasMoved: true };
-  
-  // Update the board in the new state
-  newState.board = newBoard;
-
-  // Handle castling
-  if (piece.type === 'king' && !piece.hasMoved) {
-    const fromRank = from[1];
-    const toFile = to[0];
-    
-    // Kingside castling
-    if (toFile === 'g') {
-      const rook = gameState.board[`h${fromRank}` as Square];
-      if (rook?.type === 'rook') {
-        newState.board[`h${fromRank}` as Square] = null;
-        newState.board[`f${fromRank}` as Square] = { ...rook, hasMoved: true };
-        move.isCastling = true;
-      }
-    }
-    // Queenside castling
-    else if (toFile === 'c') {
-      const rook = gameState.board[`a${fromRank}` as Square];
-      if (rook?.type === 'rook') {
-        newState.board[`a${fromRank}` as Square] = null;
-        newState.board[`d${fromRank}` as Square] = { ...rook, hasMoved: true };
-        move.isCastling = true;
-      }
-    }
+  // Check if the move would put the player's own king in check
+  if (wouldBeInCheck(gameState.board, from, to, piece.color)) {
+    return gameState;
   }
 
-  // Handle pawn promotion
-  if (piece.type === 'pawn' && (to[1] === '8' || to[1] === '1')) {
-    newState.board[to] = { type: 'queen', color: piece.color, hasMoved: true };
-    move.promotion = 'queen';
-  }
+  // Update check and checkmate status
+  const isInCheckState = isInCheck(newBoard, newState.currentTurn);
+  const isCheckmateState = isInCheckState && !canMoveOutOfCheck(newBoard, newState.currentTurn);
 
-  // Update game state
-  newState.currentTurn = gameState.currentTurn === 'white' ? 'black' : 'white';
-  newState.selectedSquare = null;
-  newState.validMoves = [];
-  newState.moveHistory = [...gameState.moveHistory, move];
-
-  // Check for check/checkmate
-  newState.isCheck = isInCheck(newState);
-  newState.isCheckmate = isCheckmate(newState);
-
-  // If it's checkmate, update the current turn to the winner
-  if (newState.isCheckmate) {
-    newState.currentTurn = gameState.currentTurn; // Keep the turn with the winning player
-  }
-
-  return newState;
-}
-
-function isInCheck(gameState: GameState): boolean {
-  const kingColor = gameState.currentTurn;
-  let kingSquare: Square | null = null;
-
-  // Find the king's position
-  for (const [square, piece] of Object.entries(gameState.board)) {
-    if (piece?.type === 'king' && piece.color === kingColor) {
-      kingSquare = square as Square;
-      break;
-    }
-  }
-
-  if (!kingSquare) return false;
-
-  // Check if any opponent piece can capture the king
-  for (const [square, piece] of Object.entries(gameState.board)) {
-    if (piece && piece.color !== kingColor) {
-      const moves = getValidMoves(square as Square, gameState);
-      if (moves.includes(kingSquare)) {
-        return true;
-      }
-    }
-  }
-
-  return false;
-}
-
-function isCheckmate(gameState: GameState): boolean {
-  // First check if the current player is in check
-  if (!isInCheck(gameState)) return false;
-
-  // Try all possible moves for all pieces of the current player
-  for (const [square, piece] of Object.entries(gameState.board)) {
-    if (piece?.color === gameState.currentTurn) {
-      const moves = getValidMoves(square as Square, gameState);
-      
-      // Try each move to see if it gets out of check
-      for (const move of moves) {
-        const newState = makeMove(square as Square, move, gameState);
-        // If any move gets out of check, it's not checkmate
-        if (!isInCheck(newState)) {
-          return false;
-        }
-      }
-    }
-  }
-
-  // If no moves get out of check, it's checkmate
-  return true;
+  return {
+    ...newState,
+    isCheck: isInCheckState,
+    isCheckmate: isCheckmateState,
+  };
 } 

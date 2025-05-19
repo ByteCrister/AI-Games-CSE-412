@@ -1,5 +1,12 @@
 import { cn } from '@/lib/utils';
-import { CellProps } from './types';
+
+interface CellProps {
+  state: 'black' | 'white' | null;
+  position: { row: number; col: number };
+  isValidMove: boolean;
+  onClick: (position: { row: number; col: number }) => void;
+  isLastMove?: boolean;
+}
 
 export const Cell = ({
   state,
@@ -16,6 +23,7 @@ export const Cell = ({
 
   return (
     <button
+      name={`cell-${position.row}-${position.col}`}
       className={cn(
         'relative w-full aspect-square border border-gray-300',
         'flex items-center justify-center',
@@ -30,7 +38,6 @@ export const Cell = ({
       disabled={!isValidMove && !state}
       aria-label={`Cell at row ${position.row + 1}, column ${position.col + 1}`}
       aria-pressed={!!state}
-      role="gridcell"
     >
       {state && (
         <div
@@ -45,7 +52,7 @@ export const Cell = ({
         />
       )}
       {isValidMove && !state && (
-        <div 
+        <div
           className="absolute w-3 h-3 rounded-full bg-gray-400/50 animate-pulse"
           aria-hidden="true"
         />

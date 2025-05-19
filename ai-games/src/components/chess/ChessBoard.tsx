@@ -11,19 +11,23 @@ export function ChessBoard({ gameState, onSquareClick }: ChessBoardProps) {
   const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
 
   return (
-    <div className="relative w-full max-w-[min(90vw,90vh)] aspect-square">
+    <div className="relative w-full aspect-square">
       <div className="absolute inset-0 rounded-lg border-4 border-amber-900 bg-amber-900 p-3">
         <div className="grid h-full grid-cols-8 grid-rows-8 gap-[2px]">
           {ranks.map((rank) =>
             files.map((file) => {
               const square = `${file}${rank}` as SquareType;
+              const piece = gameState.board[square];
+              const isSelected = gameState.selectedSquare === square;
+              const isValidMove = gameState.validMoves.some(move => move.to === square);
+              
               return (
                 <Square
                   key={square}
                   square={square}
-                  piece={gameState.board[square]}
-                  isSelected={gameState.selectedSquare === square}
-                  isValidMove={gameState.validMoves.includes(square)}
+                  piece={piece}
+                  isSelected={isSelected}
+                  isValidMove={isValidMove}
                   onClick={onSquareClick}
                 />
               );
