@@ -1,15 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { Board } from './Board';
 import { ScoreBoard } from './ScoreBoard';
 import { GameControls } from './GameControls';
 import { useReversiGame } from './useReversiGame';
 import { Difficulty } from './types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useParams, useRouter } from 'next/navigation';
 
 export default function Reversi() {
-    const [difficulty, setDifficulty] = useState<Difficulty>('medium');
+    const params = useParams();
+    const router = useRouter();
+    const difficulty = params.difficulty as Difficulty;
     const {
         gameState,
         handleMove,
@@ -18,6 +21,10 @@ export default function Reversi() {
         validMoves,
         canUndo
     } = useReversiGame(difficulty);
+
+    const handleNewGame = () => {
+        router.push('/reversi');
+    };
 
     // Announce game state changes for screen readers
     useEffect(() => {
@@ -31,14 +38,14 @@ export default function Reversi() {
     }, [gameState.gameOver, gameState.winner]);
 
     return (
-        <main 
+        <main
             className="min-h-screen bg-gray-100 py-8 px-4 flex items-center justify-center"
             role="main"
             aria-label="Reversi game"
         >
             <div className="max-w-4xl w-full space-y-6">
                 <h1 className="text-3xl font-bold text-center text-gray-800">
-                    Reversi
+                    Reversi - {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                 </h1>
 
                 <ScoreBoard
@@ -57,14 +64,13 @@ export default function Reversi() {
 
                 <GameControls
                     onRestart={restart}
+                    onNewGame={handleNewGame}
                     onUndo={undo}
-                    onDifficultyChange={setDifficulty}
-                    currentDifficulty={difficulty}
                     canUndo={canUndo}
                 />
 
                 {gameState.gameOver && (
-                    <Alert 
+                    <Alert
                         className="text-center animate-in fade-in slide-in-from-bottom-4"
                         role="alert"
                     >

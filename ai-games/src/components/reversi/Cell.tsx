@@ -1,13 +1,5 @@
 import { cn } from '@/lib/utils';
-import { CellState, Position } from './types';
-
-interface CellProps {
-  state: CellState;
-  position: Position;
-  isValidMove: boolean;
-  onClick: (position: Position) => void;
-  isLastMove: boolean;
-}
+import { CellProps } from './types';
 
 export const Cell = ({
   state,
@@ -30,7 +22,7 @@ export const Cell = ({
         'transition-all duration-200',
         'hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500',
         'active:scale-95',
-        isValidMove && 'bg-green-50 hover:bg-green-100 cursor-pointer',
+        isValidMove && 'bg-gray-200/50 hover:bg-gray-300/50 cursor-pointer',
         !isValidMove && !state && 'cursor-not-allowed',
         isLastMove && 'ring-2 ring-blue-500'
       )}
@@ -54,7 +46,7 @@ export const Cell = ({
       )}
       {isValidMove && !state && (
         <div 
-          className="absolute w-3 h-3 rounded-full bg-green-500 opacity-50 animate-pulse"
+          className="absolute w-3 h-3 rounded-full bg-gray-400/50 animate-pulse"
           aria-hidden="true"
         />
       )}

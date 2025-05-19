@@ -23,9 +23,8 @@ export type Difficulty = 'easy' | 'medium' | 'hard';
 
 export interface GameControls {
   onRestart: () => void;
+  onNewGame: () => void;
   onUndo: () => void;
-  onDifficultyChange: (difficulty: Difficulty) => void;
-  currentDifficulty: Difficulty;
   canUndo: boolean;
 }
 

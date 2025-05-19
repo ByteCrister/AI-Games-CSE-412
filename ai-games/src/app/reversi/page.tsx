@@ -1,9 +1,9 @@
-import Reversi from "@/components/reversi/Reversi"
+import ReversiDifficulty from "@/components/reversi/ReversiDifficulty"
 
-const Page = () => {
+const page = () => {
   return (
-    <Reversi />
+    <ReversiDifficulty />
   )
 }
 
-export default Page
+export default page

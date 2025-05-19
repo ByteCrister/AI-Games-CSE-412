@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { GameState, Player, AIDifficulty } from './types';
+import { GameState, Player, AIDifficulty, FirstPlayer } from './types';
 import { checkWinner, isBoardFull, getAIMove } from './GameLogic';
 
 const initialGameState: GameState = {
@@ -40,6 +40,7 @@ export function useTicTacToe(difficulty: AIDifficulty) {
     totalMoves: 0,
   });
   const [isAIMoving, setIsAIMoving] = useState(false);
+  const [firstPlayer, setFirstPlayer] = useState<FirstPlayer>('player');
   const aiTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isAIMovingRef = useRef(false);
   const gameStateRef = useRef(gameState);
@@ -56,7 +57,19 @@ export function useTicTacToe(difficulty: AIDifficulty) {
     }
     isAIMovingRef.current = false;
     setIsAIMoving(false);
-    setGameState(initialGameState);
+    setGameState({
+      ...initialGameState,
+      currentPlayer: firstPlayer === 'player' ? 'X' : 'O',
+    });
+    setMoveHistory([]);
+  }, [firstPlayer]);
+
+  const setFirstPlayerAndReset = useCallback((player: FirstPlayer) => {
+    setFirstPlayer(player);
+    setGameState({
+      ...initialGameState,
+      currentPlayer: player === 'player' ? 'X' : 'O',
+    });
     setMoveHistory([]);
   }, []);
 
@@ -70,18 +83,33 @@ export function useTicTacToe(difficulty: AIDifficulty) {
     isAIMovingRef.current = false;
     setIsAIMoving(false);
 
+    // Get the last two moves (player and AI) if they exist
     const lastMove = moveHistory[moveHistory.length - 1];
-    const newHistory = moveHistory.slice(0, -1);
-    setMoveHistory(newHistory);
+    const secondLastMove = moveHistory.length > 1 ? moveHistory[moveHistory.length - 2] : null;
 
-    setGameState(prev => ({
-      ...prev,
-      board: lastMove.board,
-      currentPlayer: lastMove.player,
-      status: 'playing',
-      winner: null,
-      winningLine: null,
-    }));
+    // If the last move was by AI, we need to undo both the AI move and the player move
+    if (lastMove.player === 'O' && secondLastMove) {
+      setMoveHistory(moveHistory.slice(0, -2));
+      setGameState(prev => ({
+        ...prev,
+        board: secondLastMove.board,
+        currentPlayer: secondLastMove.player,
+        status: 'playing',
+        winner: null,
+        winningLine: null,
+      }));
+    } else {
+      // If the last move was by player, just undo that move
+      setMoveHistory(moveHistory.slice(0, -1));
+      setGameState(prev => ({
+        ...prev,
+        board: lastMove.board,
+        currentPlayer: lastMove.player,
+        status: 'playing',
+        winner: null,
+        winningLine: null,
+      }));
+    }
   }, [moveHistory]);
 
   const updateGameState = useCallback((newBoard: (Player | null)[]) => {
@@ -214,5 +242,7 @@ export function useTicTacToe(difficulty: AIDifficulty) {
     resetGame,
     undoLastMove,
     isAIMoving,
+    firstPlayer,
+    setFirstPlayerAndReset,
   };
 } 

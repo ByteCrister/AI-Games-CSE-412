@@ -4,6 +4,7 @@ export type Board = CellValue[];
 
 export type GameStatus = 'playing' | 'won' | 'draw';
 export type AIDifficulty = 'easy' | 'medium' | 'hard' | 'pvp';
+export type FirstPlayer = 'player' | 'ai';
 
 export interface GameState {
   board: Board;
