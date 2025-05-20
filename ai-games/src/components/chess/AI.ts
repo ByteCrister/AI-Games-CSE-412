@@ -188,7 +188,12 @@ function minimax(
 }
 
 export function getAIMove(gameState: GameState, difficulty: AIDifficulty): Move {
-  const moves = getAllLegalMoves(gameState, 'black');
+  const aiColor = gameState.currentTurn;
+  const moves = getAllLegalMoves(gameState, aiColor);
+
+  if (moves.length === 0) {
+    throw new Error('No valid moves available for AI');
+  }
 
   switch (difficulty) {
     case 'easy': {
@@ -203,7 +208,7 @@ export function getAIMove(gameState: GameState, difficulty: AIDifficulty): Move 
 
       for (const move of moves) {
         const newState = makeMove(move.from, move.to, gameState);
-        const score = -evaluatePosition(newState);
+        const score = aiColor === 'white' ? evaluatePosition(newState) : -evaluatePosition(newState);
         if (score > bestScore) {
           bestScore = score;
           bestMove = move;
@@ -215,7 +220,7 @@ export function getAIMove(gameState: GameState, difficulty: AIDifficulty): Move 
     case 'hard': {
       // Minimax with alpha-beta pruning
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const [_, bestMove] = minimax(gameState, 3, -Infinity, Infinity, false);
+      const [_, bestMove] = minimax(gameState, 3, -Infinity, Infinity, aiColor === 'white');
       return bestMove || moves[0];
     }
 

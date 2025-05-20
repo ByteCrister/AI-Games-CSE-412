@@ -44,17 +44,17 @@ function canMoveOutOfCheck(gameState: GameState, color: PieceColor): boolean {
   for (const [fromSquare, piece] of Object.entries(gameState.board)) {
     if (piece && piece.color === color) {
       const validMoves = getValidMoves(fromSquare as Square, gameState);
-      
+
       // Try each valid move
       for (const toSquare of validMoves) {
         // Create a copy of the board for testing the move
         const testBoard = { ...gameState.board } as Record<Square, Piece | null>;
         const fromPiece = testBoard[fromSquare as Square];
-        
+
         // Make the move on the test board
         testBoard[toSquare] = fromPiece;
         delete testBoard[fromSquare as Square];
-        
+
         // Check if the king is still in check after this move
         const kingSquare = findKingPosition(testBoard, color);
         if (kingSquare) {
@@ -90,6 +90,16 @@ function makeMoveOnBoard(
   return newBoard;
 }
 
+function isKingKilled(board: Record<Square, Piece | null>, color: PieceColor): boolean {
+  // Check if the king of the given color exists on the board
+  for (const piece of Object.values(board)) {
+    if (piece?.type === 'king' && piece.color === color) {
+      return false; // King is still alive
+    }
+  }
+  return true; // King is not found, meaning it was killed
+}
+
 export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: TurnOrder = 'player') {
   const [gameState, setGameState] = useState<GameState>(() => ({
     board: initializeBoard(),
@@ -107,24 +117,40 @@ export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: Tur
     if (turnOrder === 'ai' && gameState.currentTurn === 'white' && gameState.moveHistory.length === 0) {
       setTimeout(() => {
         setGameState(prev => {
-          const aiMove = getAIMove(prev, difficulty);
-          if (aiMove) {
-            const newBoard = makeMoveOnBoard(prev.board, aiMove.from, aiMove.to);
-            const newState: GameState = {
-              ...prev,
-              board: newBoard,
-              currentTurn: 'black',
-              moveHistory: [...prev.moveHistory, aiMove],
-            };
+          try {
+            const aiMove = getAIMove(prev, difficulty);
+            if (aiMove) {
+              const newBoard = makeMoveOnBoard(prev.board, aiMove.from, aiMove.to);
+              const newState: GameState = {
+                ...prev,
+                board: newBoard,
+                currentTurn: 'black',
+                moveHistory: [...prev.moveHistory, aiMove],
+              };
 
-            const isInCheckState = isInCheck(newState, newState.currentTurn);
-            const isCheckmateState = isInCheckState && isCheckmate(newState, newState.currentTurn);
+              // Check if a king was killed
+              const isWhiteKingKilled = isKingKilled(newBoard, 'white');
+              const isBlackKingKilled = isKingKilled(newBoard, 'black');
 
-            return {
-              ...newState,
-              isCheck: isInCheckState,
-              isCheckmate: isCheckmateState,
-            };
+              if (isWhiteKingKilled || isBlackKingKilled) {
+                return {
+                  ...newState,
+                  isCheckmate: true,
+                  isCheck: true,
+                };
+              }
+
+              const isInCheckState = isInCheck(newState, newState.currentTurn);
+              const isCheckmateState = isInCheckState && isCheckmate(newState, newState.currentTurn);
+
+              return {
+                ...newState,
+                isCheck: isInCheckState,
+                isCheckmate: isCheckmateState,
+              };
+            }
+          } catch (error) {
+            console.error('Error making AI move:', error);
           }
           return prev;
         });
@@ -136,9 +162,10 @@ export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: Tur
     setGameState(prevState => {
       // If it's AI's turn, ignore player clicks
       const isPlayerTurn = (turnOrder === 'player' && prevState.currentTurn === 'white') ||
-                          (turnOrder === 'ai' && prevState.currentTurn === 'black');
-      
-      if (!isPlayerTurn) {
+        (turnOrder === 'ai' && prevState.currentTurn === 'black');
+
+      // Prevent any moves if the game is over
+      if (!isPlayerTurn || prevState.isCheckmate || prevState.isResigned) {
         return prevState;
       }
 
@@ -166,6 +193,18 @@ export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: Tur
             moveHistory: [...prevState.moveHistory, validMove],
           };
 
+          // Check if a king was killed
+          const isWhiteKingKilled = isKingKilled(newBoard, 'white');
+          const isBlackKingKilled = isKingKilled(newBoard, 'black');
+
+          if (isWhiteKingKilled || isBlackKingKilled) {
+            return {
+              ...newState,
+              isCheckmate: true,
+              isCheck: true,
+            };
+          }
+
           const isInCheckState = isInCheck(newState, newState.currentTurn);
           const isCheckmateState = isInCheckState && isCheckmate(newState, newState.currentTurn);
 
@@ -175,31 +214,47 @@ export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: Tur
             isCheckmate: isCheckmateState,
           };
 
-          // If it's AI's turn after player's move, make AI move
+          // If it's AI's turn after player's move and the game isn't over, make AI move
           const isAITurn = (turnOrder === 'player' && updatedState.currentTurn === 'black') ||
-                          (turnOrder === 'ai' && updatedState.currentTurn === 'white');
+            (turnOrder === 'ai' && updatedState.currentTurn === 'white');
 
-          if (isAITurn) {
+          if (isAITurn && !updatedState.isCheckmate && !updatedState.isResigned) {
             setTimeout(() => {
               setGameState(prev => {
-                const aiMove = getAIMove(prev, difficulty);
-                if (aiMove) {
-                  const aiBoard = makeMoveOnBoard(prev.board, aiMove.from, aiMove.to);
-                  const aiState: GameState = {
-                    ...prev,
-                    board: aiBoard,
-                    currentTurn: prev.currentTurn === 'white' ? 'black' : 'white',
-                    moveHistory: [...prev.moveHistory, aiMove],
-                  };
+                try {
+                  const aiMove = getAIMove(prev, difficulty);
+                  if (aiMove) {
+                    const aiBoard = makeMoveOnBoard(prev.board, aiMove.from, aiMove.to);
+                    const aiState: GameState = {
+                      ...prev,
+                      board: aiBoard,
+                      currentTurn: prev.currentTurn === 'white' ? 'black' : 'white',
+                      moveHistory: [...prev.moveHistory, aiMove],
+                    };
 
-                  const aiInCheck = isInCheck(aiState, aiState.currentTurn);
-                  const aiCheckmate = aiInCheck && isCheckmate(aiState, aiState.currentTurn);
+                    // Check if a king was killed
+                    const isWhiteKingKilled = isKingKilled(aiBoard, 'white');
+                    const isBlackKingKilled = isKingKilled(aiBoard, 'black');
 
-                  return {
-                    ...aiState,
-                    isCheck: aiInCheck,
-                    isCheckmate: aiCheckmate,
-                  };
+                    if (isWhiteKingKilled || isBlackKingKilled) {
+                      return {
+                        ...aiState,
+                        isCheckmate: true,
+                        isCheck: true,
+                      };
+                    }
+
+                    const aiInCheck = isInCheck(aiState, aiState.currentTurn);
+                    const aiCheckmate = aiInCheck && isCheckmate(aiState, aiState.currentTurn);
+
+                    return {
+                      ...aiState,
+                      isCheck: aiInCheck,
+                      isCheckmate: aiCheckmate,
+                    };
+                  }
+                } catch (error) {
+                  console.error('Error making AI move:', error);
                 }
                 return prev;
               });
@@ -271,10 +326,10 @@ export function useChessGame(difficulty: AIDifficulty = 'medium', turnOrder: Tur
   const handleUndo = useCallback(() => {
     setGameState(prevState => {
       if (prevState.moveHistory.length < 2) return prevState;
-      
+
       // Remove last two moves (player's and AI's)
       const newMoveHistory = prevState.moveHistory.slice(0, -2);
-      
+
       // Reset the board and replay all moves except the last two
       let newState: GameState = {
         ...prevState,

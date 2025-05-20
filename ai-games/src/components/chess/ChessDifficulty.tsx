@@ -4,8 +4,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Image from 'next/image';
-import { AIDifficulty, TurnOrder } from './types';
-import { useState } from 'react';
+import { AIDifficulty } from './types';
 
 const difficulties = [
   {
@@ -36,17 +35,9 @@ const difficulties = [
 
 export default function ChessDifficulty() {
   const router = useRouter();
-  const [selectedDifficulty, setSelectedDifficulty] = useState<AIDifficulty | null>(null);
-  const [turnOrder, setTurnOrder] = useState<TurnOrder>('player');
 
   const handleDifficultySelect = (difficulty: AIDifficulty) => {
-    setSelectedDifficulty(difficulty);
-  };
-
-  const handleStartGame = () => {
-    if (selectedDifficulty) {
-      router.push(`/chess/${selectedDifficulty}?turn=${turnOrder}`);
-    }
+    router.push(`/chess/${difficulty}`);
   };
 
   return (
@@ -91,9 +82,7 @@ export default function ChessDifficulty() {
               whileTap={{ scale: 0.98 }}
             >
               <Card
-                className={`cursor-pointer transition-all duration-300 hover:shadow-xl bg-white/80 backdrop-blur-sm border-2 ${borderColor} overflow-hidden group ${
-                  selectedDifficulty === level ? 'ring-2 ring-blue-500' : ''
-                }`}
+                className={`cursor-pointer transition-all duration-300 hover:shadow-xl bg-white/80 backdrop-blur-sm border-2 ${borderColor} overflow-hidden group rounded-lg shadow-lg`}
                 onClick={() => handleDifficultySelect(level)}
               >
                 <div className={`h-2 bg-gradient-to-r ${color}`} />
@@ -126,53 +115,6 @@ export default function ChessDifficulty() {
             </motion.div>
           ))}
         </motion.div>
-
-        {selectedDifficulty && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-12 max-w-md mx-auto"
-          >
-            <Card className="bg-white/80 backdrop-blur-sm border-2 border-amber-200">
-              <CardHeader>
-                <CardTitle className="text-center text-xl font-bold text-gray-800">
-                  Who Goes First?
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex gap-4 justify-center">
-                  <button
-                    className={`px-6 py-3 rounded-lg transition-all duration-300 ${
-                      turnOrder === 'player'
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    onClick={() => setTurnOrder('player')}
-                  >
-                    I Go First
-                  </button>
-                  <button
-                    className={`px-6 py-3 rounded-lg transition-all duration-300 ${
-                      turnOrder === 'ai'
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    onClick={() => setTurnOrder('ai')}
-                  >
-                    AI Goes First
-                  </button>
-                </div>
-                <button
-                  onClick={handleStartGame}
-                  className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  Start Game
-                </button>
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
 
         <motion.div
           initial={{ opacity: 0 }}

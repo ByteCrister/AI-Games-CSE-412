@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { RotateCcw, Undo2, Flag } from 'lucide-react';
+import { RotateCcw, Undo2, Flag, AlertTriangle } from 'lucide-react';
 
 interface GameControlsProps {
   currentTurn: 'white' | 'black';
@@ -10,6 +10,7 @@ interface GameControlsProps {
   onUndo: () => void;
   onResign: () => void;
   isRotated: boolean;
+  isCheck?: boolean;
 }
 
 export function GameControls({
@@ -18,6 +19,7 @@ export function GameControls({
   onUndo,
   onResign,
   isRotated,
+  isCheck = false,
 }: GameControlsProps) {
   return (
     <motion.div
@@ -28,11 +30,31 @@ export function GameControls({
     >
       <div className="text-center">
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Game Controls</h2>
-        <div className="inline-block px-4 py-2 rounded-lg bg-gray-100">
-          <span className="text-gray-600">Current Turn: </span>
-          <span className={`font-bold ${currentTurn === 'white' ? 'text-gray-800' : 'text-gray-400'}`}>
-            {currentTurn === 'white' ? 'White' : 'Black'}
-          </span>
+        <div className="flex flex-col items-center gap-2">
+          <div className={`inline-flex items-center px-4 py-2 rounded-lg ${
+            currentTurn === 'white' ? 'bg-white' : 'bg-gray-800'
+          } border-2 ${
+            currentTurn === 'white' ? 'border-gray-300' : 'border-gray-600'
+          } shadow-md`}>
+            <div className={`w-4 h-4 rounded-full mr-2 ${
+              currentTurn === 'white' ? 'bg-gray-800' : 'bg-white'
+            }`} />
+            <span className={`font-bold ${
+              currentTurn === 'white' ? 'text-gray-800' : 'text-white'
+            }`}>
+              {currentTurn === 'white' ? 'White' : 'Black'}&apos;s Turn
+            </span>
+          </div>
+          {isCheck && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center px-4 py-2 rounded-lg bg-red-100 text-red-700 font-semibold"
+            >
+              <AlertTriangle className="w-4 h-4 mr-2" />
+              Check!
+            </motion.div>
+          )}
         </div>
       </div>
 

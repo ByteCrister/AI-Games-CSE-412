@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ChessBoard } from '@/components/chess/ChessBoard';
 import { GameControls } from '@/components/chess/GameControls';
@@ -24,11 +24,22 @@ export default function ChessGame() {
     handleResign,
   } = useChessGame(difficulty, turnOrder);
 
+  // Effect to handle turn order changes
+  useEffect(() => {
+    setIsBoardRotated(turnOrder === 'ai');
+    handleRestart();
+  }, [turnOrder, handleRestart]);
+
   const handleTurnOrderChange = (newTurnOrder: TurnOrder) => {
     setTurnOrder(newTurnOrder);
-    setIsBoardRotated(newTurnOrder === 'ai');
-    handleRestart(); // Restart the game when turn order changes
   };
+
+  // Determine the current player's color and game state
+  const playerColor = turnOrder === 'player' ? 'white' : 'black';
+  const isGameOver = gameState.isCheckmate || gameState.isResigned;
+  const winner = gameState.isCheckmate 
+    ? (gameState.currentTurn === 'white' ? 'black' : 'white')
+    : (gameState.isResigned ? (playerColor === 'white' ? 'black' : 'white') : null);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-4">
@@ -56,6 +67,7 @@ export default function ChessGame() {
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
+                  disabled={isGameOver}
                 >
                   You
                 </Button>
@@ -65,6 +77,7 @@ export default function ChessGame() {
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
+                  disabled={isGameOver}
                 >
                   AI
                 </Button>
@@ -98,13 +111,14 @@ export default function ChessGame() {
               onUndo={handleUndo}
               onResign={handleResign}
               isRotated={isBoardRotated}
+              isCheck={gameState.isCheck}
             />
           </motion.div>
         </div>
 
         <GameOverModal
-          isOpen={gameState.isCheckmate || gameState.isResigned}
-          winner={gameState.currentTurn === 'white' ? 'black' : 'white'}
+          isOpen={isGameOver}
+          winner={winner}
           onRestart={handleRestart}
         />
       </div>
