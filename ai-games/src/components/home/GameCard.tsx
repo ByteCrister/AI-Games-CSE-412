@@ -12,7 +12,7 @@ const GameCard = ({ game }: { game: GameOption }) => {
       case 'tic-tac-toe':
         return '/images/tic-tac-toe.png';
       case 'chess':
-        return '/images/chess-board.png';
+        return '/images/chess.png';
       case 'reversi':
         return '/images/reversi.png';
       default:
