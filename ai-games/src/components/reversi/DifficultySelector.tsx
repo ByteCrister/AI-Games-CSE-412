@@ -36,7 +36,6 @@ const difficulties = [
 ] as const;
 
 export const DifficultySelector = ({
-  currentDifficulty,
   onDifficultyChange
 }: DifficultySelectorProps) => {
   return (
@@ -58,9 +57,7 @@ export const DifficultySelector = ({
           <Card
             className={cn(
               "cursor-pointer transition-all duration-300 hover:shadow-xl bg-white/80 backdrop-blur-sm border-2 overflow-hidden group",
-              borderColor,
-              currentDifficulty === level && "ring-2 ring-blue-500"
-            )}
+              borderColor)}
             onClick={() => onDifficultyChange(level)}
           >
             <div className={cn("h-2 bg-gradient-to-r", color)} />
