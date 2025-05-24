@@ -4,12 +4,13 @@ import { cn } from '@/lib/utils';
 interface SquareProps {
   square: SquareType;
   piece: Piece | null;
+  getPieceSymbol: (piece: Piece) => string
   isSelected: boolean;
   isValidMove: boolean;
   onClick: (square: SquareType) => void;
 }
 
-export function Square({ square, piece, isSelected, isValidMove, onClick }: SquareProps) {
+export function Square({ square, piece, getPieceSymbol, isSelected, isValidMove, onClick }: SquareProps) {
   const [file, rank] = square.split('');
   const isLight = (file.charCodeAt(0) + parseInt(rank)) % 2 === 0;
 
@@ -49,15 +50,3 @@ export function Square({ square, piece, isSelected, isValidMove, onClick }: Squa
     </button>
   );
 }
-
-function getPieceSymbol(piece: Piece): string {
-  const symbols: Record<Piece['type'], { white: string; black: string }> = {
-    king: { white: '♔', black: '♚' },
-    queen: { white: '♕', black: '♛' },
-    rook: { white: '♖', black: '♜' },
-    bishop: { white: '♗', black: '♝' },
-    knight: { white: '♘', black: '♞' },
-    pawn: { white: '♙', black: '♟' },
-  };
-  return symbols[piece.type][piece.color];
-} 
