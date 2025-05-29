@@ -1,5 +1,5 @@
 import { Square } from './Square';
-import { GameState, Square as SquareType } from './types';
+import { GameState, Piece, Square as SquareType } from './types';
 
 interface ChessBoardProps {
   gameState: GameState;
@@ -9,6 +9,18 @@ interface ChessBoardProps {
 export function ChessBoard({ gameState, onSquareClick }: ChessBoardProps) {
   const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
   const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+
+  function getPieceSymbol(piece: Piece): string {
+    const symbols: Record<Piece['type'], { white: string; black: string }> = {
+      king: { white: '♔', black: '♚' },
+      queen: { white: '♕', black: '♛' },
+      rook: { white: '♖', black: '♜' },
+      bishop: { white: '♗', black: '♝' },
+      knight: { white: '♘', black: '♞' },
+      pawn: { white: '♙', black: '♟' },
+    };
+    return symbols[piece.type][piece.color];
+  }
 
   return (
     <div className="relative w-full aspect-square">
@@ -20,12 +32,13 @@ export function ChessBoard({ gameState, onSquareClick }: ChessBoardProps) {
               const piece = gameState.board[square];
               const isSelected = gameState.selectedSquare === square;
               const isValidMove = gameState.validMoves.some(move => move.to === square);
-              
+
               return (
                 <Square
                   key={square}
                   square={square}
                   piece={piece}
+                  getPieceSymbol={getPieceSymbol}
                   isSelected={isSelected}
                   isValidMove={isValidMove}
                   onClick={onSquareClick}

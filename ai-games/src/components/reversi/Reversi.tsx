@@ -8,6 +8,7 @@ import { useReversiGame } from './useReversiGame';
 import { Difficulty } from './types';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 export default function Reversi() {
     const params = useParams();
@@ -39,14 +40,24 @@ export default function Reversi() {
 
     return (
         <main
-            className="min-h-screen bg-gray-100 py-8 px-4 flex items-center justify-center"
+            className="min-h-screen bg-gray-100 py-8 px-4 flex flex-col items-center justify-center gap-2.5"
             role="main"
             aria-label="Reversi game"
         >
-            <div className="max-w-4xl w-full space-y-6">
-                <h1 className="text-3xl font-bold text-center text-gray-800">
-                    Reversi - {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+            <div className="flex items-center gap-4">
+                <Image
+                    src="/images/reversi.png"
+                    alt="Reversi"
+                    width={48}
+                    height={48}
+                    className="rounded-lg shadow-md"
+                />
+                <h1 className="text-3xl font-bold text-gray-900">
+                    Reversi -{" "}
+                    {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
                 </h1>
+            </div>
+            <div className="max-w-4xl w-full space-y-6">
 
                 <ScoreBoard
                     scores={gameState.scores}

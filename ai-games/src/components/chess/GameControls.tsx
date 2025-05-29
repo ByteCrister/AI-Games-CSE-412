@@ -31,17 +31,13 @@ export function GameControls({
       <div className="text-center">
         <h2 className="text-xl font-semibold text-gray-800 mb-2">Game Controls</h2>
         <div className="flex flex-col items-center gap-2">
-          <div className={`inline-flex items-center px-4 py-2 rounded-lg ${
-            currentTurn === 'white' ? 'bg-white' : 'bg-gray-800'
-          } border-2 ${
-            currentTurn === 'white' ? 'border-gray-300' : 'border-gray-600'
-          } shadow-md`}>
-            <div className={`w-4 h-4 rounded-full mr-2 ${
-              currentTurn === 'white' ? 'bg-gray-800' : 'bg-white'
-            }`} />
-            <span className={`font-bold ${
-              currentTurn === 'white' ? 'text-gray-800' : 'text-white'
-            }`}>
+          <div className={`inline-flex items-center px-4 py-2 rounded-lg ${currentTurn === 'white' ? 'bg-white' : 'bg-gray-800'
+            } border-2 ${currentTurn === 'white' ? 'border-gray-300' : 'border-gray-600'
+            } shadow-md`}>
+            <div className={`w-4 h-4 rounded-full mr-2 ${currentTurn === 'white' ? 'bg-gray-800' : 'bg-white'
+              }`} />
+            <span className={`font-bold ${currentTurn === 'white' ? 'text-gray-800' : 'text-white'
+              }`}>
               {currentTurn === 'white' ? 'White' : 'Black'}&apos;s Turn
             </span>
           </div>
@@ -58,10 +54,10 @@ export function GameControls({
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="flex flex-col md:flex-row md:flex-wrap justify-between items-center gap-1.5 w-full">
         <Button
           onClick={onRestart}
-          className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+          className="md:flex-1 w-full md:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
         >
           <RotateCcw className="w-4 h-4 mr-2" />
           Restart Game
@@ -69,7 +65,7 @@ export function GameControls({
 
         <Button
           onClick={onUndo}
-          className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+          className="md:flex-1 w-full md:w-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
         >
           <Undo2 className="w-4 h-4 mr-2" />
           Undo Move
@@ -77,7 +73,7 @@ export function GameControls({
 
         <Button
           onClick={onResign}
-          className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
+          className="md:flex-1 w-full md:w-auto bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-md hover:shadow-lg transition-all duration-300"
         >
           <Flag className="w-4 h-4 mr-2" />
           Resign

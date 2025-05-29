@@ -1,19 +1,20 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { ChessBoard } from '@/components/chess/ChessBoard';
-import { GameControls } from '@/components/chess/GameControls';
-import { GameOverModal } from '@/components/chess/GameOverModal';
-import { useChessGame } from '@/components/chess/useChessGame';
-import { AIDifficulty, TurnOrder } from './types';
-import { Button } from '@/components/ui/button';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { ChessBoard } from "@/components/chess/ChessBoard";
+import { GameControls } from "@/components/chess/GameControls";
+import { GameOverModal } from "@/components/chess/GameOverModal";
+import { useChessGame } from "@/components/chess/useChessGame";
+import { AIDifficulty, TurnOrder } from "./types";
+import { Button } from "@/components/ui/button";
+import { useParams } from "next/navigation";
+import Image from "next/image";
 
 export default function ChessGame() {
   const params = useParams();
   const difficulty = params.difficulty as AIDifficulty;
-  const [turnOrder, setTurnOrder] = useState<TurnOrder>('player');
+  const [turnOrder, setTurnOrder] = useState<TurnOrder>("player");
   const [isBoardRotated, setIsBoardRotated] = useState(false);
 
   const {
@@ -26,7 +27,7 @@ export default function ChessGame() {
 
   // Effect to handle turn order changes
   useEffect(() => {
-    setIsBoardRotated(turnOrder === 'ai');
+    setIsBoardRotated(turnOrder === "ai");
     handleRestart();
   }, [turnOrder, handleRestart]);
 
@@ -35,11 +36,17 @@ export default function ChessGame() {
   };
 
   // Determine the current player's color and game state
-  const playerColor = turnOrder === 'player' ? 'white' : 'black';
+  const playerColor = turnOrder === "player" ? "white" : "black";
   const isGameOver = gameState.isCheckmate || gameState.isResigned;
-  const winner = gameState.isCheckmate 
-    ? (gameState.currentTurn === 'white' ? 'black' : 'white')
-    : (gameState.isResigned ? (playerColor === 'white' ? 'black' : 'white') : null);
+  const winner = gameState.isCheckmate
+    ? gameState.currentTurn === "white"
+      ? "black"
+      : "white"
+    : gameState.isResigned
+      ? playerColor === "white"
+        ? "black"
+        : "white"
+      : null;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 py-4">
@@ -50,32 +57,39 @@ export default function ChessGame() {
           transition={{ duration: 0.5 }}
           className="text-center mb-4"
         >
-          <h1 className="text-2xl font-bold text-gray-900 mb-3">Chess</h1>
           <div className="flex flex-col items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600">Difficulty:</span>
-              <span className="font-semibold capitalize px-3 py-1 bg-gray-100 rounded-lg">
-                {difficulty}
-              </span>
+            <div className="flex items-center gap-4">
+              <Image
+                src="/images/chess.png"
+                alt="Chess"
+                width={48}
+                height={48}
+                className="rounded-lg shadow-md"
+              />
+              <h1 className="text-3xl font-bold text-gray-900">
+                Chess -{" "}
+                {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+              </h1>
             </div>
+
             <div className="flex items-center gap-4">
               <span className="text-gray-600">Who goes first?</span>
               <div className="flex gap-2">
                 <Button
-                  onClick={() => handleTurnOrderChange('player')}
-                  className={`px-4 py-2 rounded-lg transition-all ${turnOrder === 'player'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  onClick={() => handleTurnOrderChange("player")}
+                  className={`px-4 py-2 rounded-lg transition-all ${turnOrder === "player"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   disabled={isGameOver}
                 >
                   You
                 </Button>
                 <Button
-                  onClick={() => handleTurnOrderChange('ai')}
-                  className={`px-4 py-2 rounded-lg transition-all ${turnOrder === 'ai'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  onClick={() => handleTurnOrderChange("ai")}
+                  className={`px-4 py-2 rounded-lg transition-all ${turnOrder === "ai"
+                      ? "bg-blue-500 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                     }`}
                   disabled={isGameOver}
                 >
