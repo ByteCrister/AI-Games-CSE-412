@@ -9,7 +9,7 @@ This project features three classic AI-powered games:
 ## 🚀 Live Demo
 
 You can try out the AI Games project live here:  
-👉 [https://ai-games-bytecrister.vercel.app](https://ai-games-bytecrister.vercel.app)
+👉 [https://ai-games-cse-412.vercel.app/](https://ai-games-cse-412.vercel.app/)
 
 
 Built with:
