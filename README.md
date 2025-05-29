@@ -6,6 +6,12 @@ This project features three classic AI-powered games:
 - ❌⭕ **Tic-Tac-Toe**
 - ⚫⚪ **Reversi (Othello)**
 
+## 🚀 Live Demo
+
+You can try out the AI Games project live here:  
+👉 [https://ai-games-bytecrister.vercel.app](https://ai-games-bytecrister.vercel.app)
+
+
 Built with:
 - **Next.js 15+**
 - **React 19**
