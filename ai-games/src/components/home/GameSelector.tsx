@@ -1,5 +1,4 @@
 "use client";
-
 import GameCard from "./GameCard";
 import { GAME_OPTIONS } from "./types";
 import { motion } from "framer-motion";
